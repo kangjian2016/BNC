@@ -8,13 +8,13 @@ for(Rpackage in c("devtools","flexmix","GGally","igraph","mclust","truncnorm")){
 
   if(!is.element(Rpackage,installed.packages())){
    
-    install.packages("devtools")
+    install.packages(Rpackage)
     
   }
   
 }
 
-is.element("DPpackage",installed.packages()){    
+if(!is.element("DPpackage",installed.packages()){    
 
    devtools::install_github("konkam/DPpackage")
    
