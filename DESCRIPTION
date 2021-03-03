@@ -1,0 +1,15 @@
+Package: BNC
+Title: Bayesian Node Classification with Missing Values on Biological Networks
+Version: 1.0.0
+Author: Zhuxuan Jin, Jian Kang, Tianwei Yu
+Maintainer: Jian Kang <jiankang@umich.edu>
+Description: Functions to conduct the nonparametric Bayesian node classification (BNC) with missing values on biological networks. The posterior computation algorithm is designed utilizing Swendsen-Wang algorithm for efficiently updating the gene class indicators as well as an updated Dirichlet process mixture model as a prior model. The algorithm can naturally handle missing values in the Bayesian modeling framework and provide two algorithms for imputation. Functions used in simulation studies are also provided for illustration purpose. 
+Depends: R (>= 3.3.2),flexmix, graphics, GGally, igraph, mclust, network,
+        stats, truncnorm
+License: GPL-2
+Imports: DPpackage, flexmix, graphics, GGally, igraph, mclust, network,
+        stats, truncnorm
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+NeedsCompilation: no
