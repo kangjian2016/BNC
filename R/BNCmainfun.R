@@ -379,7 +379,9 @@ DPdensCluster=function(para,twogrps=FALSE){
       # print(id)
       KLdist=c(KLdist,BNC::myKLdivergenece(para$priorNull,list(mu=mu[c(nullclassID,id)],sd=sigma[c(nullclassID,id)],prop=prop[c(nullclassID,id)]),integral=para$DPM$KLrange,precision=para$DPM$KLprecision,para$DPM$KLNullmethod))
     }
+
     ll = which(KLdist==min(KLdist,na.rm=TRUE))[1]
+
     KLdiff=KLD-KLdist[ll]
     if(KLdiff>0){
       nullclassID=c(nullclassID,c(min(nullclassID)-1,max(nullclassID)+1)[ll])
@@ -443,8 +445,7 @@ myKLdivergenece=function(nulldens,dens,integral=c(-6,6),precision=0.001,method=c
     })
     ynull=rowSums(ynull)
   }
-  #   plot(x,ynull,type="l")
-  #print(cbind(ynull,y))
+
   KL=flexmix::KLdiv(cbind(ynull,y),eps =1e-9)
   return(KL[1,2])
 }
