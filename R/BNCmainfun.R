@@ -199,7 +199,7 @@ BNC=function(net,test.stat,pvalue.stat=FALSE,candidate.z.set=c(-1,0,1),seed.main
   mcmc.default=list(nburn=1000,nsave=100,nskip=0,ndisplay=1000)
   vars=setdiff(names(mcmc.default),names(para.HODC$mcmc))
   para.HODC$mcmc[vars]=lapply(vars,function(x){mcmc.default[[x]]})
-  prior.default=list(alpha=3,m2=rep(0,1),s2=diag(100000,1),psiinv2=diag(100000,1),nu1=4,nu2=4,tau1=1,tau2=100)
+  prior.default=list(alpha=3,m2=rep(0,1),s2=diag(100000,1),psiinv2=diag(100000,1),nu1=4,nu2=4,tau1=1,tau2=1)
   para.HODC$prior=lapply(1:numz,function(x){
     vars=setdiff(names(prior.default),names(para.HODC$prior[[x]]))
     para.HODC$prior[[x]][vars]=lapply(vars,function(x){prior.default[[x]]})
@@ -260,7 +260,9 @@ BNC=function(net,test.stat,pvalue.stat=FALSE,candidate.z.set=c(-1,0,1),seed.main
     ## keep track of z changes:
     zTrack=cbind(zTrack,paraList$zLab)
     kk=kk+1
+    cat("iter: ",iter,"\n")
     iter=iter+1
+
   }
   print("Stop updating density, only update the class indicators")
   #### Main Loop - density updates:
@@ -351,11 +353,13 @@ DPdensCluster=function(para,twogrps=FALSE){
   # set.seed(para$DPM$seed)
   #fit=DPpackage::DPdensity(y=para$rStat[!is.na(para$rStat)],prior=para$DPM$prior,mcmc=para$DPM$mcmc,state=NULL,status=TRUE)
   dp <- dirichletprocess::DirichletProcessGaussian(y = para$rStat[!is.na(para$rStat)],
-                                                   goPriors = c(para$DPM$prior$m1,
-                                                   para$DPM$prior$k0,
-                                                   para$DPM$prior$nu1,
-                                                   1/para$DPM$prior$psiinv1))
-  dp <- dirichletprocess::Fit(dp,para$DPM$mcmc)
+                                                     g0Priors = c(0,
+                                                                  0.01,
+                                                                  4,
+                                                                  2),
+                                                     alphaPriors = c(3000,1000))
+
+  dp <- dirichletprocess::Fit(dp,its=para$DPM$mcmc$nburn + para$DPM$mcmc$nsave)
   utils::flush.console()
   #### sort sum(L_k)
   #nclust=fit$state$ncluster
@@ -757,6 +761,7 @@ DensityDPOne=function(para){
     ll=which(para$zLab==z)
     if(length(ll)>para$min.node){
       myprior=para$HODCPara$prior[[z]]
+      #print(myprior)
       # myprior$m1=para$mulist[[z]]
       # nn=length(para$sdlist[[z]])
       # myprior$psiinv1=diag(para$sdlist[[z]],nrow=nn,ncol=nn)
@@ -790,11 +795,16 @@ DensityDPOne=function(para){
 #' @export
 DPdensitySubset=function(ll,subdat,subprior,submcmc,substatus){
   #fit=DPpackage::DPdensity(subdat[ll],prior=subprior,mcmc=submcmc,status=substatus)
+  g0priors <- c(0,
+                subprior$tau1/subprior$tau2,
+                subprior$nu1,
+                1)
+
   dp <- dirichletprocess::DirichletProcessGaussian(subdat[ll],
-                                                   g0Priors = c(subprior$m1,
-                                                                subprior$k0,
-                                                                subprior$nu1,
-                                                                1/subprior$psiinv1))
+                                                   g0Priors = g0priors,
+                                                   alphaPriors = c(4,2)
+                                                   )
+  dp <- dirichletprocess::Fit(dp,its=submcmc$nsave+submcmc$nburn)
   utils::flush.console()
   #nclust=fit$state$ncluster
   nclust = dp$numberClusters
