@@ -115,8 +115,8 @@ BNC=function(net,test.stat,pvalue.stat=FALSE,candidate.z.set=c(-1,0,1),seed.main
   if(!requireNamespace("mclust", quietly = TRUE)) {
     stop("Please load package: mclust as required ")
   }
-  if(!requireNamespace("DPpackage", quietly = TRUE)) {
-    stop("Please load package: DPpackage as required ")
+  if(!requireNamespace("dirichletprocess", quietly = TRUE)) {
+    stop("Please load package: dirichletprocess as required ")
   }
 
   set.seed(seed.main)
@@ -339,6 +339,7 @@ TransZ=function(p){
   return(m)
 }
 
+#' @import dirichletprocess
 #' @title {DPdensCluster}
 #' @description First, apply DP-package to split data into several small normal groups based on their test statistics, then merge until we attain total three groups based on K-L distance between proposed null density vs. prior null density from biological background knowledge. Finally, return each group's mixture normal parameters as a list.
 #' @param para The parameter list
@@ -348,13 +349,23 @@ TransZ=function(p){
 DPdensCluster=function(para,twogrps=FALSE){
   #### initialized L-1 L0 L1 as sum(L_k)=fit$state$ncluster
   # set.seed(para$DPM$seed)
-  fit=DPpackage::DPdensity(y=para$rStat[!is.na(para$rStat)],prior=para$DPM$prior,mcmc=para$DPM$mcmc,state=NULL,status=TRUE)
+  #fit=DPpackage::DPdensity(y=para$rStat[!is.na(para$rStat)],prior=para$DPM$prior,mcmc=para$DPM$mcmc,state=NULL,status=TRUE)
+  dp <- dirichletprocess::DirichletProcessGaussian(y = para$rStat[!is.na(para$rStat)],
+                                                   goPriors = c(para$DPM$prior$m1,
+                                                   para$DPM$prior$k0,
+                                                   para$DPM$prior$nu1,
+                                                   1/para$DPM$prior$psiinv1))
+  dp <- dirichletprocess::Fit(dp,para$DPM$mcmc)
   utils::flush.console()
   #### sort sum(L_k)
-  nclust=fit$state$ncluster
-  prop=table(fit$state$ss)/sum(table(fit$state$ss))
-  mu=fit$state$muclus[1:nclust]
-  sigma=fit$state$sigmaclus[1:nclust]
+  #nclust=fit$state$ncluster
+  nclust = dp$numberClusters
+  #prop=table(fit$state$ss)/sum(table(fit$state$ss))
+  prop = table(dp$clusterLabels)/length(dp$clusterLabels)
+  #mu=fit$state$muclus[1:nclust]
+  mu = as.vector(dp$clusterParameters[[1]])
+  #sigma=fit$state$sigmaclus[1:nclust]
+  sigma = as.vector(dp$clusterParameters[[2]])
   index=order(mu,decreasing=FALSE)
   mu=mu[index]
   sigma=sigma[index]
@@ -409,7 +420,7 @@ DPdensCluster=function(para,twogrps=FALSE){
       para$sdlist[[k]]=sigma[idlist[[k]]]
       para$proplist[[k]]=prop[idlist[[k]]]/sum(prop[idlist[[k]]])
       ll=index[idlist[[k]]]
-      para$zLab[which(is.element(fit$state$ss,ll))]=k
+      para$zLab[which(is.element(dp$clusterLabels,ll))]=k
     }
   }
   return(para)
@@ -778,14 +789,23 @@ DensityDPOne=function(para){
 #' @keywords internal
 #' @export
 DPdensitySubset=function(ll,subdat,subprior,submcmc,substatus){
-  fit=DPpackage::DPdensity(subdat[ll],prior=subprior,mcmc=submcmc,status=substatus)
+  #fit=DPpackage::DPdensity(subdat[ll],prior=subprior,mcmc=submcmc,status=substatus)
+  dp <- dirichletprocess::DirichletProcessGaussian(subdat[ll],
+                                                   g0Priors = c(subprior$m1,
+                                                                subprior$k0,
+                                                                subprior$nu1,
+                                                                1/subprior$psiinv1))
   utils::flush.console()
-  nclust=fit$state$ncluster
-  prop=table(fit$state$ss)/sum(table(fit$state$ss))
-  mu=fit$state$muclus[1:nclust]
-  sigma=fit$state$sigmaclus[1:nclust]
+  #nclust=fit$state$ncluster
+  nclust = dp$numberClusters
+  #prop=table(fit$state$ss)/sum(table(fit$state$ss))
+  prop = table(dp$clusterLabels)/length(dp$clusterLabels)
+  #mu=fit$state$muclus[1:nclust]
+  mu = as.vector(dp$clusterParameters[[1]])
+  #sigma=fit$state$sigmaclus[1:nclust]
+  sigma = as.vector(dp$clusterParameters[[2]])
   index=order(mu,decreasing=FALSE)
-  oldg=fit$state$ss
+  oldg=dp$clusterLabels
   newg=oldg
   k=1
   gloc=list()
